@@ -1,0 +1,293 @@
+
+*********************************************************************
+BlinkingBits.RoutedForms: Simple routing support for ASP.NET WebForms
+*********************************************************************
+
+BlinkingBits.RoutedForms offers url routing for your ASP.NET WebForms
+apps. Also, it adds some little magic to your pages :)
+
+
+Why another routing lib?
+************************
+
+I started creating this because I love the way the Django Framework manages
+url mappings and I wanted something similar for ASP.NET but *extremely* simpler.
+
+This lib is the result of an afternoon of coding.
+
+
+Configuration
+*************
+
+1. Add a reference to BlinkingBits.RoutedForms.dll in your website.
+
+Now, open your web.config...
+
+2. Add a new "section" handler into "configSections":
+
+	<configSections>
+		<section name="urlRouting" type="BlinkingBits.RoutedForms.Configuration.UrlRoutingSection"/>
+	</configSections>
+
+3. Add a new httpModule under web.config|system.webserver:
+
+	<httpModules>
+		<add name="RoutedForms" type="BlinkingBits.RoutedForms.Module" />
+	</httpModules>
+
+Thats all! You are ready to start adding url mappings to your web.config:
+
+  <urlRouting>
+    <add pattern="*.aspx" url="~/404.html" />
+    <add pattern="~/{filename}/?" url="~/${filename}.aspx" />
+  </urlRouting>
+
+
+Url mapping syntax
+******************
+
+In it's simplest form, RoutedForms allows you to define route patterns using
+wildcards (*) and named placeholders ({name}).
+
+Example:
+
+	<add pattern="~/articles/?" url="~/articles.aspx" />
+
+In the above example, all requests to ~/articles/ will route to ~/articles.aspx.
+
+Let's see a more advanced pattern:
+
+	<add pattern="~/{filename}/?" url="~/${filename}.aspx" />
+
+Now, all requests to ~/{filename}/ will route to ~/{filename}.aspx
+(ie: ~/articles/ --> ~/articles.aspx)
+
+Simple, uh?
+
+Of course, you can use a more advanced method to define your patterns. The
+"regex" form is way more powerful and let's you use your beloved regular
+expressions! Here, you can use named placeholders like in the basic form
+and also regex named groups (both are equal internally). So...
+
+Examples:
+
+	<add pattern="^~/users/(?<id>\d+)/?$" url="~/ViewProfile.aspx?id=${id}" type="regex" />
+	<add pattern="^~/users/(?<id>\d+)/edit/?$" url="~/EditProfile.aspx?id=${id}" type="regex" />
+
+The same examples using numeric indices instead of named groups:
+
+	<add pattern="^~/users/(?<id>\d+)/?$" url="~/ViewProfile.aspx?id=$1" type="regex" />
+	<add pattern="^~/users/(?<id>\d+)/edit/?$" url="~/EditProfile.aspx?id=$1" type="regex" />
+
+Both examples will route to the corresponding pages, passing the user id in the QueryString.
+Note we have added the "type" attribute with a value of "regex".
+
+
+Adding the magic
+****************
+
+You can enjoy RoutedForms simply with the simple url routing exposed above but
+if you want to use the awesome magic that RoutedForms has to offer and boost
+your development time, keep reading.
+
+By making your page classes inherit from BlinkingBits.RoutedForms.UI.Page
+instead of System.Web.UI.Page, you'll have automatic support for reading
+routed arguments and dynamic method calling.
+
+So...
+
+	public partial class _Default : BlinkingBits.RoutedForms.UI.Page
+	{
+		// Class code...
+	}
+
+And thats all. Now your pages are supercharged!
+
+Now, suppose we have the following mapping definition:
+
+	<add pattern="^~/users/(?<id>\d+)/?$" url="~/ViewProfile.aspx" type="regex" />
+
+(note we no longer pass the id in the QueryString)
+
+In your page you can do...
+
+	public partial class _ViewProfile : BlinkingBits.RoutedForms.UI.Page
+	{
+		// Class code...
+
+		public void FetchUser ()
+		{
+			int userId = int.Parse (NamedArguments["id"]);
+
+			// Now I can fetch my user data from my DAL
+			// ...
+		}
+	
+		// More class code...
+	}
+
+You can use the NamedArguments Dictionary<string,string> to fetch the named
+groups or the List<string> Arguments to fetch them using a numeric index.
+
+And now, for the best part. I'm sure you'll love this :)
+
+The last thing you'll get for free by inheriting from BlinkingBits.RoutedForms.UI.Page
+is dynamic method calling *from within* your mapings.
+
+As always, let's see an example.
+
+The mapping:
+
+	<add pattern="~/users/delete/(?<id>\d+)/?" url="~/EditProfile.aspx" method="DeleteUser" type="regex" />
+
+The class:
+
+	public partial class _EditProfile : BlinkingBits.RoutedForms.UI.Page
+	{
+		// Class code...
+
+		public void DeleteUser ()
+		{
+			int userId = int.Parse (NamedArguments["id"]);
+
+			// Here I delete the user data
+		}
+	
+		// More class code...
+	}
+
+
+When the mapping is executed, the DeleteUser() method of the target page
+will be called automagically. Neat!
+
+A more complex example.
+
+The mapping:
+
+	<add pattern="~/users/{action}/(?<id>\d+)/?" url="~/EditProfile.aspx" method="${action}User" type="regex" />
+
+The class:
+
+	public partial class _EditProfile : BlinkingBits.RoutedForms.UI.Page
+	{
+		// Class code...
+
+		public void DeleteUser ()
+		{
+			int userId = int.Parse (NamedArguments["id"]);
+
+			// Here I delete the user data
+		}
+
+		public void EditUser ()
+		{
+			int userId = int.Parse (NamedArguments["id"]);
+
+			// Here I edit the user data
+		}
+
+		public void DisplayUser ()
+		{
+			int userId = int.Parse (NamedArguments["id"]);
+
+			// Here I display the user data
+		}
+	
+		// And more class code...
+	}
+
+What's happening here? Well, the page method to execute is obtained at run
+time using the routing arguments. If a method doesn't exists, the page
+continues with the normal workflow.
+
+Keep in mind, if you use this feature, you cannot take over the OnLoad method.
+The best way it's not usong OnLoad *at all* but, if you have to, remember
+to call the base method always!
+
+	public partial class _EditProfile : BlinkingBits.RoutedForms.UI.Page
+	{
+		protected override void OnLoad(EventArgs e)
+		{
+		    base.OnLoad(e);
+
+		    // Your OnLoad code here...
+		}
+
+		// Class code...
+	}
+
+And thats all folks!
+
+
+FAQ
+***
+
+Well, this project is so new there isn't any FAQs. I'll try to do my best
+to answer that question you have in your head right now :)
+
+- Q: Can I use this lib in existing projects?
+Yes! Simply follow the installation instructions and define your routes.
+You can migrate an app going folder by folder using this method and all will
+work perfectly (at least until you find a bug)
+
+- Q: What happens to my static files (css, js, images...)? Are routed too?
+Yes :(
+This version of RoutedForms "eats" all the requests. If the url doesn't match
+any defined pattern, the url will be unaltered and IIS will serve the resource.
+
+I plan to add ignore patterns in the next version. By the way, your assets
+*should* be outside of your app. There are more efficient servers than IIS
+for that!
+
+- Q: Why another routing lib?
+Why not? It's a funny exercise to reimplement things in your own. Also,
+maybe you can solve a problem in a more efficient way than everybody and
+you don't know :)  (I can't, but who cares)
+
+
+Bugs
+****
+
+If you encounter bugs, please follow these steps:
+
+1. First, try if the bug is fixed in the latest BlinkingBits.RoutedForms master branch:
+   Get it from https://github.com/blinkingbits/BlinkingBits.RoutedForms.
+
+2. Submit the bug on our issue tracker:
+   https://github.com/blinkingbits/BlinkingBits.RoutedForms/issues
+
+Let us know in detail what is going on, including some code and preferably a
+test case so we can quickly reproduce the error.
+
+Better, yet, fix the bug and bask in the glory of being a contributor (see below!).
+
+
+Contributing!
+*************
+
+I'd love some help on this, so please feel free to mess around!
+
+Visit http://blinkingbits.com/
+
+Stay updated on http://twitter.com/blinkingbits
+
+Have fun!
+
+
+License
+*******
+
+BlinkingBits.RoutedForms is licensed under the terms of the MIT License.
+See the included MIT-LICENSE file.
+
+
+Next steps
+**********
+
+While I want to maintain this project as small as possible, I'd love to
+hear from features you miss! :)
+
+Urgent things to fix for the next version:
+- Some working examples
+- *Better* documentation
+- Possibility to define patterns to ignore (to serve static assets more efficiently)
