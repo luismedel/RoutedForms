@@ -34,21 +34,19 @@ namespace BlinkingBits.RoutedForms.Configuration
     /// </summary>
     class UrlRoutingSection : System.Configuration.IConfigurationSectionHandler
     {
-        private Regex RegexSegment = new Regex (@"\{([^/]+)\}", RegexOptions.Compiled);
-        private Regex RegexEscaped = new Regex(@"([.-+?])", RegexOptions.Compiled);
-
-        public RoutingItemCollection Items { get; private set; }
+        private static Regex RegexSegment = new Regex (@"\{(\w+)\}", RegexOptions.Compiled);
+        private static Regex RegexEscaped = new Regex (@"([.+?\-])", RegexOptions.Compiled);
 
         public object Create(object parent, object configContext, System.Xml.XmlNode section)
         {
-            if (Items != null)
-                return Items;
+            UrlRoutingConfig config = new UrlRoutingConfig();
 
-            Items = new RoutingItemCollection ();
+            config.AppendSlash = (section.Attributes["appendSlash"] != null) && (section.Attributes["appendSlash"].Value == "true");
+            config.IgnoreExisting = (section.Attributes["ignoreExistingFiles"] != null) && (section.Attributes["ignoreExistingFiles"].Value == "true");
 
             foreach (XmlNode node in section.SelectNodes("add"))
             {
-                string pattern = node.Attributes["pattern"].Value;
+                string pattern = (node.Attributes["pattern"] != null) ? node.Attributes["pattern"].Value : node.InnerText.Trim ();
 
                 if ((node.Attributes["type"] == null) || (node.Attributes["type"].Value != "regex"))
                 {
@@ -58,20 +56,15 @@ namespace BlinkingBits.RoutedForms.Configuration
                 }
 
                 pattern = RegexSegment.Replace(pattern, @"(?<$1>[^/]+)");
-                Regex regex = new Regex(pattern, RegexOptions.Compiled);
+                Regex regex = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
                 if (node.Attributes["ignore"] != null)
                 {
-                    Items.Add(new RoutingItem {
-                        Ignore = true,
-                        Regex = regex
-                    });
+                    config.IgnoreItems.Add(new RoutingItem { Regex = regex });
                 }
                 else
                 {
-                    Items.Add(new RoutingItem
-                    {
-                        Ignore = false,
+                    config.Items.Add(new RoutingItem {
                         Regex = regex,
                         Url = node.Attributes["url"].Value,
                         Method = (node.Attributes["method"] != null) ? node.Attributes["method"].Value : string.Empty
@@ -79,7 +72,7 @@ namespace BlinkingBits.RoutedForms.Configuration
                 }
             }
 
-            return Items;
+            return config;
         }
     }
 }

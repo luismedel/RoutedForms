@@ -25,6 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -36,15 +37,14 @@ namespace BlinkingBits.RoutedForms
 {
     class Module: IHttpModule
     {
+        private UrlRoutingConfig _config = null;
+        
         public void Init (HttpApplication app)
         {
             app.BeginRequest += new EventHandler(app_BeginRequest);
-            
-            RoutingItemCollection items = (RoutingItemCollection)HttpContext.Current.GetSection("urlRouting");
-
-            app.Application["RoutingCollection"] = items.FindAll(item => !item.Ignore);
-            app.Application["RoutingCollection_Ignore"] = items.FindAll(item => item.Ignore);
+            _config = (UrlRoutingConfig)HttpContext.Current.GetSection("urlRouting");
         }
+
 
         void app_BeginRequest(object sender, EventArgs e)
         {
@@ -52,17 +52,25 @@ namespace BlinkingBits.RoutedForms
 
             string url = context.Request.AppRelativeCurrentExecutionFilePath;
 
+            string extension = Path.GetExtension(url);
+            if (extension == "axd")
+                return;
+
+            if (_config.IgnoreExisting && File.Exists(context.Request.PhysicalPath))
+                return;
+
+            if (_config.AppendSlash && (!url.EndsWith("/")) && (Path.GetExtension (url).Length == 0))
+                url += "/";
+
             /* First we test for ignore patterns */
-            RoutingItemCollection ignoreItems = (RoutingItemCollection)context.Application["RoutingCollection_Ignore"];
-            foreach (RoutingItem r in ignoreItems)
+            foreach (RoutingItem r in _config.IgnoreItems)
             {
                 if (r.Regex.IsMatch(url))
                     return;
             }
 
             /* The real work here */
-            RoutingItemCollection items = (RoutingItemCollection)context.Application["RoutingCollection"];
-            foreach (RoutingItem r in items)
+            foreach (RoutingItem r in _config.Items)
             {
                 if (!r.Regex.IsMatch(url))
                     continue;
@@ -72,7 +80,7 @@ namespace BlinkingBits.RoutedForms
                 List<string> arguments = new List<string>();
                 Dictionary<string, string> namedArguments = new Dictionary<string, string>();
 
-                for (int i = 0; i < m.Groups.Count; i++)
+                for (int i = 1; i < m.Groups.Count; i++)
                 {
                     Group g = m.Groups[i];
                     arguments.Add(g.Value);

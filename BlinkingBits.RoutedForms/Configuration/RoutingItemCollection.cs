@@ -30,5 +30,12 @@ namespace BlinkingBits.RoutedForms.Configuration
 {
     class RoutingItemCollection: List<RoutingItem>
     {
+        public RoutingItemCollection()
+            : base()
+        { }
+
+        public RoutingItemCollection(IEnumerable<RoutingItem> collection)
+            : base(collection)
+        { }
     }
 }

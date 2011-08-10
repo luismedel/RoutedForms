@@ -50,6 +50,7 @@ namespace BlinkingBits.RoutedForms.UI
         public string Method
         {
             get { return (string)Context.Items["RoutedMethod"]; }
+            private set { Context.Items["RoutedMethod"] = value; }
         }
 
         /// <summary>
@@ -101,7 +102,10 @@ namespace BlinkingBits.RoutedForms.UI
         {
             string method = Method;
             if (!string.IsNullOrEmpty(method))
-                ExecMethod(method);
+            {
+                if (!ExecMethod(method))
+                    Method = string.Empty;
+            }
         }
         #endregion
     }

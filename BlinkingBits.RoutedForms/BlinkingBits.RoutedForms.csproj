@@ -12,6 +12,7 @@
     <AssemblyName>BlinkingBits.RoutedForms</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -40,6 +41,7 @@
   <ItemGroup>
     <Compile Include="Configuration\RoutingItem.cs" />
     <Compile Include="Configuration\RoutingItemCollection.cs" />
+    <Compile Include="Configuration\UrlRoutingConfig.cs" />
     <Compile Include="Configuration\UrlRoutingSection.cs" />
     <Compile Include="Module.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

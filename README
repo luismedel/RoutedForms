@@ -11,9 +11,10 @@ Why another routing lib?
 ************************
 
 I started creating this because I love the way the Django Framework manages
-url mappings and I wanted something similar for ASP.NET but *extremely* simpler.
+url mappings and I wanted something similar for ASP.NET but *extremely*
+simpler to use in my projects.
 
-This lib is the result of an afternoon of coding.
+This lib is the result of two afternoons of coding.
 
 
 Configuration
@@ -62,7 +63,11 @@ Let's see a more advanced pattern:
 Now, all requests to ~/{filename}/ will route to ~/{filename}.aspx
 (ie: ~/articles/ --> ~/articles.aspx)
 
-You can tell RoutedForms to ignore certain patterns. 
+You can use numeric indices if you want.
+
+	<add pattern="~/{folder}/{filename}/?" url="~/$1/$2.aspx" />
+
+Also, you can tell RoutedForms to ignore certain patterns. 
 
 	<add pattern="~/media/js/*.js"   ignore="true" />
 	<add pattern="~/media/css/*.css" ignore="true" />
@@ -73,20 +78,62 @@ Simple, uh?
 Of course, you can use a more advanced method to define your patterns. The
 "regex" form is way more powerful and let's you use your beloved regular
 expressions! Here, you can use named placeholders like in the basic form
-and also regex named groups (both are equal internally). So...
+and also regex named groups (both are equal internally).
 
-Examples:
+	<add pattern="^~/users/(\d+)/?$" url="~/ViewProfile.aspx?id=$1" type="regex" />
+	<add pattern="^~/users/(\d+)/edit/?$" url="~/EditProfile.aspx?id=$1" type="regex" />
 
-	<add pattern="^~/users/(?<id>\d+)/?$" url="~/ViewProfile.aspx?id=${id}" type="regex" />
-	<add pattern="^~/users/(?<id>\d+)/edit/?$" url="~/EditProfile.aspx?id=${id}" type="regex" />
+Both examples will route to the corresponding pages, passing the numeric user
+id in the QueryString. Note we have added the "type" attribute with a value
+of "regex".
 
-The same examples using numeric indices instead of named groups:
+Keep in mind that regular expressions can contain some characters considered
+forbidden in xml attributes ("<" and ">"). So, if you want to use them, you
+may want to add the regexp as CDATA, instead of using the "pattern"
+attibute.
 
-	<add pattern="^~/users/(?<id>\d+)/?$" url="~/ViewProfile.aspx?id=$1" type="regex" />
-	<add pattern="^~/users/(?<id>\d+)/edit/?$" url="~/EditProfile.aspx?id=$1" type="regex" />
+	<add url="~/ViewProfile.aspx?id=${id}" type="regex">
+		<![CDATA[ ^~/users/(?<id>\d+)/?$ ]]>
+	</add>
 
-Both examples will route to the corresponding pages, passing the user id in the QueryString.
-Note we have added the "type" attribute with a value of "regex".
+	<add pattern="" url="~/EditProfile.aspx?id=${id}" type="regex">
+		<![CDATA[ ^~/users/(?<id>\d+)/edit/?$ ]]>
+	</add>
+
+
+End slash
+*********
+
+Sometimes you want to consider "~/users/" and "~/users" the same url. You
+have two options for that.
+
+The first, is making the slash optinal using the modificator "?"
+
+	<add pattern="^~/users/images/?$"  ignore="true" type="regex" />
+	
+The second, and recommended one, is using the "appendSlash" attribute in
+the "urlRouting" section
+
+	<urlRouting appendSlash="true">
+		...
+	</urlRouting>
+
+Now, you can use a simpler pattern:
+
+	<add pattern="~/users/images/" ignore="true" />
+
+
+More ignores
+************
+
+If you want to ignore actual files from being routed, you can add the
+attribute "ignoreExistingFiles" to the "urlRouting" section. When you set
+this attribute to "true", existing files will not be tested against your
+patterns and will be served immediately.
+
+	<urlRouting ignoreExistingFiles="true">
+		...
+	<urlRouting>
 
 
 Adding the magic
@@ -237,14 +284,16 @@ You can migrate an app going folder by folder using this method and all will
 work perfectly (at least until you find a bug)
 
 - Q: What happens to my static files (css, js, images...)? Are routed too?
-Yes, but you can define patterns to ignore. By the way, your assets
-*should* be outside of your app. There are more efficient servers than IIS
-for that!
+No, if you add the "ignoreExistingFiles" attribute to your "urlRouting"
+section. If not, you can define patterns to ignore.
+
+By the way, your assets *should* be outside of your app. There are more
+efficient servers than IIS for that!
 
 - Q: Why another routing lib?
 Why not? It's a funny exercise to reimplement things in your own. Also,
-maybe you can solve a problem in a more efficient way than everybody and
-you don't know :)  (I can't, but who cares)
+maybe you can solve a problem in a more efficient way than everybody else
+and you don't know :)  (I can't, but who cares)
 
 
 Bugs
@@ -290,6 +339,6 @@ While I want to maintain this project as small as possible, I'd love to
 hear from features you miss! :)
 
 Urgent things to fix for the next version:
-- Some working examples
 - *Better* documentation
+- [done] Some working examples  (there's a basic one)
 - [done] Possibility to define patterns to ignore (to serve static assets more efficiently)
