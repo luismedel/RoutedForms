@@ -1,4 +1,4 @@
-﻿/*
+/*
 BlinkingBits.RoutedForms: Simple routing support for ASP.NET WebForms
 
 Copyright (c) 2011 Luis Medel / Blining Bits Software (luis@blinkingbits.com)
@@ -35,28 +35,10 @@ namespace BlinkingBits.RoutedForms
 {
     class Module: IHttpModule
     {
-        private static RoutingItemCollection items = new RoutingItemCollection();
-
-        public void Dispose()
-        {
-            if (items != null)
-            {
-                lock (items)
-                {
-                    items.Clear();
-                    items = null;
-                }
-            }
-        }
-
-        public void Init(HttpApplication app)
+        public void Init (HttpApplication app)
         {
             app.BeginRequest += new EventHandler(app_BeginRequest);
-            lock (items)
-            {
-                if (items.Count == 0)
-                    items = (RoutingItemCollection)HttpContext.Current.GetSection("urlRouting");
-            }
+            app.Application["RoutingCollection"] = HttpContext.Current.GetSection("urlRouting");
         }
 
         void app_BeginRequest(object sender, EventArgs e)
@@ -65,6 +47,7 @@ namespace BlinkingBits.RoutedForms
 
             string url = context.Request.AppRelativeCurrentExecutionFilePath;
 
+            RoutingItemCollection items = (RoutingItemCollection)context.Application["RoutingCollection"];
             foreach (RoutingItem r in items)
             {
                 if (!r.Regex.IsMatch(url))
@@ -91,6 +74,11 @@ namespace BlinkingBits.RoutedForms
                 context.RewritePath(newUrl, false);
                 return;
             }
+        }
+
+        public void Dispose ()
+        {
+            // Nothing to see here
         }
     }
 }
