@@ -25,6 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -38,7 +39,11 @@ namespace BlinkingBits.RoutedForms
         public void Init (HttpApplication app)
         {
             app.BeginRequest += new EventHandler(app_BeginRequest);
-            app.Application["RoutingCollection"] = HttpContext.Current.GetSection("urlRouting");
+            
+            RoutingItemCollection items = (RoutingItemCollection)HttpContext.Current.GetSection("urlRouting");
+
+            app.Application["RoutingCollection"] = items.FindAll(item => !item.Ignore);
+            app.Application["RoutingCollection_Ignore"] = items.FindAll(item => item.Ignore);
         }
 
         void app_BeginRequest(object sender, EventArgs e)
@@ -47,6 +52,15 @@ namespace BlinkingBits.RoutedForms
 
             string url = context.Request.AppRelativeCurrentExecutionFilePath;
 
+            /* First we test for ignore patterns */
+            RoutingItemCollection ignoreItems = (RoutingItemCollection)context.Application["RoutingCollection_Ignore"];
+            foreach (RoutingItem r in ignoreItems)
+            {
+                if (r.Regex.IsMatch(url))
+                    return;
+            }
+
+            /* The real work here */
             RoutingItemCollection items = (RoutingItemCollection)context.Application["RoutingCollection"];
             foreach (RoutingItem r in items)
             {
@@ -67,7 +81,9 @@ namespace BlinkingBits.RoutedForms
                 context.Items["RoutedArguments"] = arguments;
                 context.Items["RoutedNamedArguments"] = namedArguments;
 
-                if (!string.IsNullOrEmpty(r.Method))
+                if (string.IsNullOrEmpty(r.Method))
+                    context.Items["RoutedMethod"] = string.Empty;
+                else
                     context.Items["RoutedMethod"] = r.Regex.Replace(url, r.Method);
 
                 string newUrl = r.Regex.Replace(url, r.Url);

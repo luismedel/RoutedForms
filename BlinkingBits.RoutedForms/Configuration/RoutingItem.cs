@@ -32,6 +32,7 @@ namespace BlinkingBits.RoutedForms.Configuration
 {
     public class RoutingItem
     {
+        public bool Ignore { get; set; }
         public Regex Regex { get; set; }
         public string Url { get; set; }
         public string Method { get; set; }

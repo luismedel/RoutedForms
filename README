@@ -62,6 +62,12 @@ Let's see a more advanced pattern:
 Now, all requests to ~/{filename}/ will route to ~/{filename}.aspx
 (ie: ~/articles/ --> ~/articles.aspx)
 
+You can tell RoutedForms to ignore certain patterns. 
+
+	<add pattern="~/media/js/*.js"   ignore="true" />
+	<add pattern="~/media/css/*.css" ignore="true" />
+	<add pattern="~/media/images/*"  ignore="true" />
+
 Simple, uh?
 
 Of course, you can use a more advanced method to define your patterns. The
@@ -231,11 +237,7 @@ You can migrate an app going folder by folder using this method and all will
 work perfectly (at least until you find a bug)
 
 - Q: What happens to my static files (css, js, images...)? Are routed too?
-Yes :(
-This version of RoutedForms "eats" all the requests. If the url doesn't match
-any defined pattern, the url will be unaltered and IIS will serve the resource.
-
-I plan to add ignore patterns in the next version. By the way, your assets
+Yes, but you can define patterns to ignore. By the way, your assets
 *should* be outside of your app. There are more efficient servers than IIS
 for that!
 
@@ -290,4 +292,4 @@ hear from features you miss! :)
 Urgent things to fix for the next version:
 - Some working examples
 - *Better* documentation
-- Possibility to define patterns to ignore (to serve static assets more efficiently)
+- [done] Possibility to define patterns to ignore (to serve static assets more efficiently)

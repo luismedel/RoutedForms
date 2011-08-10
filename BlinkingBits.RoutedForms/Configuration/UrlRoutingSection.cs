@@ -58,12 +58,25 @@ namespace BlinkingBits.RoutedForms.Configuration
                 }
 
                 pattern = RegexSegment.Replace(pattern, @"(?<$1>[^/]+)");
+                Regex regex = new Regex(pattern, RegexOptions.Compiled);
 
-                Items.Add(new RoutingItem {
-                    Regex = new Regex(pattern, RegexOptions.Compiled),
-                    Url = node.Attributes["url"].Value,
-                    Method = (node.Attributes["method"] != null) ? node.Attributes["method"].Value : string.Empty
-                });
+                if (node.Attributes["ignore"] != null)
+                {
+                    Items.Add(new RoutingItem {
+                        Ignore = true,
+                        Regex = regex
+                    });
+                }
+                else
+                {
+                    Items.Add(new RoutingItem
+                    {
+                        Ignore = false,
+                        Regex = regex,
+                        Url = node.Attributes["url"].Value,
+                        Method = (node.Attributes["method"] != null) ? node.Attributes["method"].Value : string.Empty
+                    });
+                }
             }
 
             return Items;
